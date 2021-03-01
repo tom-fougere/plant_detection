@@ -93,3 +93,68 @@ def test_dfcn8():
     assert test_model.count_params() == 2364644
 
     del test_convs, test_img_input, test_fcn8_decoder, test_model
+
+
+def test_conv2d_block():
+    test_input = tf.keras.layers.Input(shape=(HEIGHT, WIDTH, LAYER))
+    test_output = conv2d_block(test_input, 32, 2)
+    test_model = tf.keras.Model(inputs=test_input, outputs=test_output)
+
+    # Check number of layers
+    # 1 Input and 2 Conv2d, 2 activation
+    assert len(test_model.layers) == 5
+
+    # Check input
+    assert test_model.layers[0].output_shape[0] == (None, HEIGHT, WIDTH, LAYER)
+
+    # Check layers size
+    assert test_model.layers[1].output_shape == (None, HEIGHT, WIDTH, 32)
+    assert test_model.layers[3].output_shape == (None, HEIGHT, WIDTH, 32)
+
+    # Check layers type
+    assert isinstance(test_model.layers[1], tf.keras.layers.Conv2D)
+    assert isinstance(test_model.layers[2], tf.keras.layers.Activation)
+    assert isinstance(test_model.layers[3], tf.keras.layers.Conv2D)
+
+    # Check number of parameters
+    assert test_model.count_params() == 4544
+
+    # free up test resources
+    del test_input, test_output, test_model
+
+
+def test_unet_encoder():
+    test_input = tf.keras.layers.Input(shape=(HEIGHT, WIDTH, LAYER))
+    test_output = unet_encoder(test_input)
+    test_model = tf.keras.Model(inputs=test_input, outputs=test_output)
+
+    print(test_model.summary())
+
+    # Check number of layers
+    # 1 Input and 4 blocks of 6 layers (2 Conv2d, 2 activation, 1 Max pooling, 1 dropout)
+    assert len(test_model.layers) == 6 * 4 + 1
+
+    # Check input
+    assert test_model.layers[0].output_shape[0] == (None, HEIGHT, WIDTH, LAYER)
+
+    # Check layers size
+    assert test_model.layers[1].output_shape == (None, HEIGHT, WIDTH, 64)
+    assert test_model.layers[7].output_shape == (None, HEIGHT/2, WIDTH/2, 128)
+    assert test_model.layers[13].output_shape == (None, HEIGHT/4, WIDTH/4, 256)
+    assert test_model.layers[19].output_shape == (None, HEIGHT/8, WIDTH/8, 512)
+
+    # Check layers type
+    assert isinstance(test_model.layers[5], tf.keras.layers.MaxPool2D)
+    assert isinstance(test_model.layers[6], tf.keras.layers.Dropout)
+    assert isinstance(test_model.layers[11], tf.keras.layers.MaxPool2D)
+    assert isinstance(test_model.layers[12], tf.keras.layers.Dropout)
+    assert isinstance(test_model.layers[17], tf.keras.layers.MaxPool2D)
+    assert isinstance(test_model.layers[18], tf.keras.layers.Dropout)
+    assert isinstance(test_model.layers[23], tf.keras.layers.MaxPool2D)
+    assert isinstance(test_model.layers[24], tf.keras.layers.Dropout)
+
+    # Check number of parameters
+    assert test_model.count_params() == 4685376
+
+    # free up test resources
+    del test_input, test_output, test_model
