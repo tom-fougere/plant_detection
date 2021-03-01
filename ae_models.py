@@ -6,6 +6,10 @@ DEFAULT_HEIGHT = 64
 DEFAULT_WIDTH = 64
 DEFAULT_LAYER = 3
 
+############################
+## FCN-8
+############################
+
 
 def conv_block(input, filters, strides, pooling_size, pool_strides):
     """
@@ -118,3 +122,158 @@ def fcn8_decoder(convs, n_classes):
     o = (tf.keras.layers.Activation('sigmoid'))(o)
 
     return o
+
+############################
+## UNET
+############################
+
+
+def conv2d_block(input_tensor, n_filters, kernel_size=3):
+    """
+    Adds 2 convolutional layers with the parameters passed to it
+
+    Args:
+      input_tensor (tensor) -- the input tensor
+      n_filters (int) -- number of filters
+      kernel_size (int) -- kernel size for the convolution
+
+    Returns:
+      tensor of output features
+    """
+
+    tensor = input_tensor
+    for i_layer in range(2):
+        tensor = tf.keras.layers.Conv2D(filters=n_filters, kernel_size=kernel_size, padding='same', kernel_initializer='he_normal')(tensor)
+        tensor = tf.keras.layers.Activation('relu')(tensor)
+
+    return tensor
+
+
+def unet_encoder_block(input_tensor, n_filters=63, pool_size=(2, 2), dropout=0.3):
+    """
+    Adds two convolutional blocks and then perform down sampling on output of convolutions.
+
+    Args:
+    input_tensor (tensor) -- the input tensor
+    n_filters (int) -- number of filters
+    kernel_size (int) -- kernel size for the convolution
+
+    Returns:
+    features - the output features of the convolution block
+    outputs - the maxpooled features with dropout
+    """
+
+    features = conv2d_block(input_tensor, n_filters=n_filters)
+    p = tf.keras.layers.MaxPooling2D(pool_size=pool_size)(features)
+    outputs = tf.keras.layers.Dropout(dropout)(p)
+
+    return features, outputs
+
+
+def unet_encoder(inputs):
+    """
+    This function defines the encoder or downsampling path.
+
+    Args:
+    inputs (tensor) -- batch of input images
+
+    Returns:
+    outputs - the output maxpooled features of the last encoder block
+    (features1, features2, features3, features4) - the output features of all the encoder blocks
+    """
+    dropout = 0.3
+    pool_size = (2, 2)
+
+    features1, p1 = unet_encoder_block(inputs, n_filters=64, pool_size=pool_size, dropout=dropout)
+    features2, p2 = unet_encoder_block(p1, n_filters=128, pool_size=pool_size, dropout=dropout)
+    features3, p3 = unet_encoder_block(p2, n_filters=256, pool_size=pool_size, dropout=dropout)
+    features4, p4 = unet_encoder_block(p3, n_filters=512, pool_size=pool_size, dropout=dropout)
+    outputs = p4
+
+    return outputs, (features1, features2, features3, features4)
+
+
+def unet_bottleneck(inputs):
+    """
+    This function defines the bottleneck convolutions to extract more features before the upsampling layers.
+    """
+
+    bottle_neck = conv2d_block(inputs, n_filters=1024)
+
+    return bottle_neck
+
+
+def unet_decoder_block(inputs, features, n_filters=64, kernel_size=3, strides=3, dropout=0.3):
+    """
+    defines the one decoder block of the UNet
+
+    Args:
+    inputs (tensor) -- batch of input features
+    features (tensor) -- features from an encoder block
+    n_filters (int) -- number of filters
+    kernel_size (int) -- kernel size
+    strides (int) -- strides for the deconvolution/upsampling
+    padding (string) -- "same" or "valid", tells if shape will be preserved by zero padding
+
+    Returns:
+    outputs (tensor) -- output features of the decoder block
+    """
+
+    tensor = tf.keras.layers.Conv2DTranspose(filters=n_filters, kernel_size=kernel_size, strides=strides, padding='same')(inputs)
+    tensor = tf.keras.layers.concatenate([tensor, features])
+    tensor = tf.keras.layers.Dropout(dropout)(tensor)
+    outputs = conv2d_block(tensor, n_filters=n_filters, kernel_size=kernel_size)
+
+    return outputs
+
+
+def unet_decoder(inputs, features, n_classes):
+    """
+    Defines the decoder of the UNet chaining together 4 decoder blocks.
+
+    Args:
+      inputs (tensor) -- batch of input features
+      features (tuple) -- features from the encoder blocks
+      n_classes (int) -- number of classes in the label map
+
+    Returns:
+      outputs (tensor) -- the pixel wise label map of the image
+    """
+    kernel_size = 3
+    strides = 2
+    dropout = 0.3
+
+    f1, f2, f3, f4 = features
+
+    c6 = unet_decoder_block(inputs, f4, n_filters=512, kernel_size=kernel_size, strides=strides, dropout=dropout)
+    c7 = unet_decoder_block(c6, f3, n_filters=256, kernel_size=kernel_size, strides=strides, dropout=dropout)
+    c8 = unet_decoder_block(c7, f2, n_filters=128, kernel_size=kernel_size, strides=strides, dropout=dropout)
+    c9 = unet_decoder_block(c8, f1, n_filters=64, kernel_size=kernel_size, strides=strides, dropout=dropout)
+
+    outputs = tf.keras.layers.Conv2D(n_classes, kernel_size=(1, 1), activation='softmax')(c9)
+
+    return outputs
+
+
+def UNET(input_height=DEFAULT_HEIGHT, input_width=DEFAULT_WIDTH, input_layer=DEFAULT_LAYER, output_layer=DEFAULT_LAYER):
+    """
+    Defines the UNet by connecting the encoder, bottleneck and decoder.
+    """
+
+    # specify the input shape
+    inputs = tf.keras.layers.Input(shape=(input_height, input_width, input_layer,))
+
+    # feed the inputs to the encoder
+    encoder_output, features_conv = unet_encoder(inputs)
+
+    # feed the encoder output to the bottleneck
+    bottle_neck = unet_bottleneck(encoder_output)
+
+    # feed the bottleneck and encoder block outputs to the decoder
+    # specify the number of classes via the `output_channels` argument
+    outputs = unet_decoder(bottle_neck, features_conv, output_channels=output_layer)
+
+    # create the model
+    model = tf.keras.Model(inputs=inputs, outputs=outputs)
+
+    return model
