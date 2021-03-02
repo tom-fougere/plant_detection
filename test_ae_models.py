@@ -187,8 +187,8 @@ def test_unet_bottleneck():
     del test_input, test_output, test_model
 
 
-def test_UNET():
-    test_model = UNET(input_height=HEIGHT, input_width=WIDTH, input_layer=3, output_layer=1)
+def test_unet():
+    test_model = unet(input_height=HEIGHT, input_width=WIDTH, input_layer=3, output_layer=2)
 
     count_conv2d = count_activation = count_maxpool = count_dropout = 0
     for i_layer in test_model.layers:
@@ -211,7 +211,7 @@ def test_UNET():
     assert test_model.layers[0].output_shape[0] == (None, HEIGHT, WIDTH, LAYER)
 
     # Check layers size
-    assert test_model.layers[-1].output_shape == (None, HEIGHT, WIDTH, 1)
+    assert test_model.layers[-1].output_shape == (None, HEIGHT, WIDTH, 2)
 
     # free up test resources
     del test_model
