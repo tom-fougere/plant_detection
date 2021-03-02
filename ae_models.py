@@ -257,7 +257,7 @@ def unet_decoder(inputs, features, n_classes):
     return outputs
 
 
-def UNET(input_height=DEFAULT_HEIGHT, input_width=DEFAULT_WIDTH, input_layer=DEFAULT_LAYER, output_layer=DEFAULT_LAYER):
+def unet(input_height=DEFAULT_HEIGHT, input_width=DEFAULT_WIDTH, input_layer=DEFAULT_LAYER, output_layer=DEFAULT_LAYER):
     """
     Defines the UNet by connecting the encoder, bottleneck and decoder.
 
