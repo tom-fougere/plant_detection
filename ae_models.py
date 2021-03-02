@@ -6,6 +6,7 @@ DEFAULT_HEIGHT = 64
 DEFAULT_WIDTH = 64
 DEFAULT_LAYER = 3
 
+
 ############################
 ## FCN-8
 ############################
@@ -90,10 +91,10 @@ def fcn8_decoder(convs, n_classes):
     o = tf.keras.layers.Conv2D(n, (1, 1), activation='relu', padding='same', name="conv7", data_format=IMAGE_ORDERING)(o)
     o = tf.keras.layers.Dropout(0.5)(o)
 
-    o = tf.keras.layers.Conv2D(n_classes,  (1, 1), activation='relu', padding='same', data_format=IMAGE_ORDERING)(o)
+    o = tf.keras.layers.Conv2D(n_classes, (1, 1), activation='relu', padding='same', data_format=IMAGE_ORDERING)(o)
 
     # Up-sample `o` above and crop any extra pixels introduced
-    o = tf.keras.layers.Conv2DTranspose(n_classes, kernel_size=(4, 4),  strides=(2, 2), use_bias=False)(f5)
+    o = tf.keras.layers.Conv2DTranspose(n_classes, kernel_size=(4, 4), strides=(2, 2), use_bias=False)(f5)
     o = tf.keras.layers.Cropping2D(cropping=(1, 1))(o)
 
     # load the pool 4 prediction and do a 1x1 convolution to reshape it to the same shape of `o` above
@@ -104,7 +105,7 @@ def fcn8_decoder(convs, n_classes):
     o = tf.keras.layers.Add()([o, o2])
 
     # Up-sample the resulting tensor of the operation you just did
-    o = tf.keras.layers.Conv2DTranspose(n_classes , kernel_size=(4, 4),  strides=(2, 2), use_bias=False )(o)
+    o = tf.keras.layers.Conv2DTranspose(n_classes, kernel_size=(4, 4), strides=(2, 2), use_bias=False)(o)
     o = tf.keras.layers.Cropping2D(cropping=(1, 1))(o)
 
     # load the pool 3 prediction and do a 1x1 convolution to reshape it to the same shape of `o` above
@@ -115,7 +116,7 @@ def fcn8_decoder(convs, n_classes):
     o = tf.keras.layers.Add()([o, o2])
 
     # Up-sample up to the size of the original image
-    o = tf.keras.layers.Conv2DTranspose(n_classes, kernel_size=(8, 8),  strides=(8, 8), use_bias=False)(o)
+    o = tf.keras.layers.Conv2DTranspose(n_classes, kernel_size=(8, 8), strides=(8, 8), use_bias=False)(o)
     o = tf.keras.layers.Cropping2D(((0, 0), (0, 0)))(o)
 
     # append a sigmoid activation
@@ -123,8 +124,9 @@ def fcn8_decoder(convs, n_classes):
 
     return o
 
+
 ############################
-## UNET
+##  UNET
 ############################
 
 
@@ -258,6 +260,15 @@ def unet_decoder(inputs, features, n_classes):
 def UNET(input_height=DEFAULT_HEIGHT, input_width=DEFAULT_WIDTH, input_layer=DEFAULT_LAYER, output_layer=DEFAULT_LAYER):
     """
     Defines the UNet by connecting the encoder, bottleneck and decoder.
+
+    Args:
+      input_height (int) -- dimension of the height of the inputted image
+      input_width (int) -- dimension of the width of the inputted image
+      input_layer (int) -- number of layers of the inputted image
+      output_layer (int) -- number of layers in the last layer (or number of classes in the label map)
+
+    Returns:
+      model (tensor) -- the model of the U-net network
     """
 
     # specify the input shape
@@ -270,8 +281,7 @@ def UNET(input_height=DEFAULT_HEIGHT, input_width=DEFAULT_WIDTH, input_layer=DEF
     bottle_neck = unet_bottleneck(encoder_output)
 
     # feed the bottleneck and encoder block outputs to the decoder
-    # specify the number of classes via the `output_channels` argument
-    outputs = unet_decoder(bottle_neck, features_conv, output_channels=output_layer)
+    outputs = unet_decoder(bottle_neck, features_conv, n_classes=output_layer)
 
     # create the model
     model = tf.keras.Model(inputs=inputs, outputs=outputs)

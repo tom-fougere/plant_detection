@@ -125,10 +125,8 @@ def test_conv2d_block():
 
 def test_unet_encoder():
     test_input = tf.keras.layers.Input(shape=(HEIGHT, WIDTH, LAYER))
-    test_output = unet_encoder(test_input)
+    test_output, conv_features = unet_encoder(test_input)
     test_model = tf.keras.Model(inputs=test_input, outputs=test_output)
-
-    print(test_model.summary())
 
     # Check number of layers
     # 1 Input and 4 blocks of 6 layers (2 Conv2d, 2 activation, 1 Max pooling, 1 dropout)
@@ -153,8 +151,67 @@ def test_unet_encoder():
     assert isinstance(test_model.layers[23], tf.keras.layers.MaxPool2D)
     assert isinstance(test_model.layers[24], tf.keras.layers.Dropout)
 
+    # Check conv features
+    assert len(conv_features) == 4
+    assert conv_features[0].shape.as_list() == [None, HEIGHT, WIDTH, 64]
+    assert conv_features[1].shape.as_list() == [None, HEIGHT/2, WIDTH/2, 128]
+    assert conv_features[2].shape.as_list() == [None, HEIGHT/4, WIDTH/4, 256]
+    assert conv_features[3].shape.as_list() == [None, HEIGHT/8, WIDTH/8, 512]
+
     # Check number of parameters
     assert test_model.count_params() == 4685376
 
     # free up test resources
     del test_input, test_output, test_model
+
+
+def test_unet_bottleneck():
+    test_input = tf.keras.layers.Input(shape=(HEIGHT, WIDTH, LAYER))
+    test_output = unet_bottleneck(test_input)
+    test_model = tf.keras.Model(inputs=test_input, outputs=test_output)
+
+    # Check number of layers
+    # 1 Input, 2 conv2d, 2 Activation
+    assert len(test_model.layers) == 5
+
+    # Check input
+    assert test_model.layers[0].output_shape[0] == (None, HEIGHT, WIDTH, LAYER)
+
+    # Check layers size
+    assert test_model.layers[1].output_shape == (None, HEIGHT, WIDTH, 1024)
+
+    # Check number of parameters
+    assert test_model.count_params() == 9466880
+
+    # free up test resources
+    del test_input, test_output, test_model
+
+
+def test_UNET():
+    test_model = UNET(input_height=HEIGHT, input_width=WIDTH, input_layer=3, output_layer=1)
+
+    count_conv2d = count_activation = count_maxpool = count_dropout = 0
+    for i_layer in test_model.layers:
+        if isinstance(i_layer, tf.keras.layers.Conv2D):
+            count_conv2d += 1
+        if isinstance(i_layer, tf.keras.layers.Activation):
+            count_activation += 1
+        if isinstance(i_layer, tf.keras.layers.MaxPool2D):
+            count_maxpool += 1
+        if isinstance(i_layer, tf.keras.layers.Dropout):
+            count_dropout += 1
+
+    # Check number of layers per type
+    assert count_conv2d == 19 + 4  # 19 conv2D and 4 conv2d_transpose
+    assert count_activation == 18
+    assert count_maxpool == 4
+    assert count_dropout == 4 * 2
+
+    # Check input
+    assert test_model.layers[0].output_shape[0] == (None, HEIGHT, WIDTH, LAYER)
+
+    # Check layers size
+    assert test_model.layers[-1].output_shape == (None, HEIGHT, WIDTH, 1)
+
+    # free up test resources
+    del test_model
