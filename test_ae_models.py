@@ -30,9 +30,9 @@ def test_conv_block():
     del test_input, test_output, test_model
 
 
-def test_FCN8():
+def test_encoder_fcn8():
 
-    test_convs, test_img_input = FCN8(input_height=HEIGHT, input_width=WIDTH, input_layer=LAYER)
+    test_convs, test_img_input = fcn8_encoder(input_height=HEIGHT, input_width=WIDTH, input_layer=LAYER)
     test_model = tf.keras.Model(inputs=test_img_input, outputs=[test_convs, test_img_input])
 
     # Check number of layers
@@ -46,7 +46,7 @@ def test_FCN8():
     assert test_model.layers[2].output_shape == (None, HEIGHT, WIDTH, 32)
 
     # Check output
-    assert test_model.layers[-1].output_shape == (None, HEIGHT/32, WIDTH/32, 256)
+    assert test_model.layers[-1].output_shape == (None, int(HEIGHT/32), int(WIDTH/32), 256)
 
     # Check number of parameters
     assert test_model.count_params() == 2355360
@@ -54,13 +54,13 @@ def test_FCN8():
     del test_convs, test_img_input, test_model
 
 
-def test_dfcn8():
+def test_decodeur_fcn8():
 
     kernel_size = 4
     stride_size = 2
 
     # start the encoder using the default input size
-    test_convs, test_img_input = FCN8(input_height=HEIGHT, input_width=WIDTH, input_layer=LAYER)
+    test_convs, test_img_input = fcn8_encoder(input_height=HEIGHT, input_width=WIDTH, input_layer=LAYER)
 
     # pass the convolutions obtained in the encoder to the decoder
     n_classes = 2
@@ -137,9 +137,9 @@ def test_unet_encoder():
 
     # Check layers size
     assert test_model.layers[1].output_shape == (None, HEIGHT, WIDTH, 64)
-    assert test_model.layers[7].output_shape == (None, HEIGHT/2, WIDTH/2, 128)
-    assert test_model.layers[13].output_shape == (None, HEIGHT/4, WIDTH/4, 256)
-    assert test_model.layers[19].output_shape == (None, HEIGHT/8, WIDTH/8, 512)
+    assert test_model.layers[7].output_shape == (None, int(HEIGHT/2), int(WIDTH/2), 128)
+    assert test_model.layers[13].output_shape == (None, int(HEIGHT/4), int(WIDTH/4), 256)
+    assert test_model.layers[19].output_shape == (None, int(HEIGHT/8), int(WIDTH/8), 512)
 
     # Check layers type
     assert isinstance(test_model.layers[5], tf.keras.layers.MaxPool2D)
