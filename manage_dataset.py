@@ -1,5 +1,6 @@
 import os
 import random
+import cv2
 from shutil import copyfile
 
 
@@ -33,8 +34,6 @@ def make_directory(fullpath):
 # Also -- All images should be checked, and if they have a zero file length,
 # they will not be copied over
 def split_data(FOLDER_IMAGES, FOLDER_MASKS, TARGET_FOLDER, SPLIT_SIZE):
-    TRAINING_FOLDER_NAME = TARGET_FOLDER + '/train/'
-    TESTING_FOLDER_NAME = TARGET_FOLDER + '/test/'
     TRAINING_FOLDER_NAME_IMAGES = TARGET_FOLDER + '/train/images/img/'
     TRAINING_FOLDER_NAME_MASKS = TARGET_FOLDER + '/train/masks/img/'
     TESTING_FOLDER_NAME_IMAGES = TARGET_FOLDER + '/test/images/img/'
@@ -88,3 +87,13 @@ def split_data(FOLDER_IMAGES, FOLDER_MASKS, TARGET_FOLDER, SPLIT_SIZE):
         copyfile(FOLDER_MASKS + i_file, new_path_masks)
 
     return nb_files_training
+
+
+def get_data(image_path, mask_path, id=1):
+    list_files = os.listdir(image_path)
+
+    image = cv2.imread(image_path + list_files[id])
+    mask = cv2.imread(mask_path + list_files[id])
+
+    return image, mask
+

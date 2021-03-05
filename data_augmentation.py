@@ -58,4 +58,4 @@ def create_validation_generator(target_folder, batch_size, target_size, mask_pre
 def my_image_mask_generator(image_data_generator, mask_data_generator):
     train_generator = zip(image_data_generator, mask_data_generator)
     for (img, mask) in train_generator:
-        yield (img, mask, [None])
+        yield img, mask
