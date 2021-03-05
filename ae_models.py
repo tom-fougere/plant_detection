@@ -168,8 +168,6 @@ def fcn8(input_height=DEFAULT_HEIGHT, input_width=DEFAULT_WIDTH, input_layer=DEF
     # pass the convolutions obtained in the encoder to the decoder
     dec_op = fcn8_decoder(convs, output_layer, n_filters=n_filters*6, dropout=dropout)
 
-    print(dec_op.shape)
-
     # define the model specifying the input (batch of images) and output (decoder output)
     model = tf.keras.Model(inputs=img_input, outputs=dec_op)
 
