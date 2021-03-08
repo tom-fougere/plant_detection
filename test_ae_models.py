@@ -32,7 +32,7 @@ def test_conv_block():
 
 def test_encoder_fcn8():
 
-    test_convs, test_img_input = fcn8_encoder(input_height=HEIGHT, input_width=WIDTH, input_layer=LAYER)
+    test_convs, test_img_input, padding = fcn8_encoder(input_height=HEIGHT, input_width=WIDTH, input_layer=LAYER)
     test_model = tf.keras.Model(inputs=test_img_input, outputs=[test_convs, test_img_input])
 
     # Check number of layers
@@ -60,11 +60,11 @@ def test_decodeur_fcn8():
     stride_size = 2
 
     # start the encoder using the default input size
-    test_convs, test_img_input = fcn8_encoder(input_height=HEIGHT, input_width=WIDTH, input_layer=LAYER)
+    test_convs, test_img_input, padding = fcn8_encoder(input_height=HEIGHT, input_width=WIDTH, input_layer=LAYER)
 
     # pass the convolutions obtained in the encoder to the decoder
     n_classes = 2
-    test_fcn8_decoder = fcn8_decoder(test_convs, n_classes)
+    test_fcn8_decoder = fcn8_decoder(test_convs, n_classes, padding=padding)
 
     # define the model specifying the input (batch of images) and output (decoder output)
     test_model = tf.keras.Model(inputs=test_img_input, outputs=test_fcn8_decoder)
@@ -215,3 +215,11 @@ def test_unet():
 
     # free up test resources
     del test_model
+
+
+def test_find_nearest_power_two():
+
+    assert find_nearest_power_two(250) == 8
+    assert find_nearest_power_two(256) == 9
+    assert find_nearest_power_two(0) == 0
+    assert find_nearest_power_two(1) == 1

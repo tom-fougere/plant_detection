@@ -1,4 +1,5 @@
 import tensorflow as tf
+from math import floor
 
 # parameter describing where the channel dimension is found in our dataset
 IMAGE_ORDERING = 'channels_last'
@@ -59,7 +60,15 @@ def fcn8_encoder(input_height=DEFAULT_HEIGHT, input_width=DEFAULT_WIDTH, input_l
     img_input = tf.keras.layers.Input(shape=(input_height, input_width, input_layer))
 
     # pad the input image to have dimensions to the nearest power of two
-    x = tf.keras.layers.ZeroPadding2D(padding=(0, 0))(img_input)
+    pow_height = max(find_nearest_power_two(input_height-1), 5)
+    pow_width = max(find_nearest_power_two(input_width-1), 5)
+    new_height = pow(2, pow_height)
+    new_width = pow(2, pow_width)
+    padding_height = floor((new_height - input_height)/2)
+    padding_width = floor((new_width - input_width)/2)
+
+    x = tf.keras.layers.ZeroPadding2D(padding=(padding_height, padding_width))(img_input)
+    # x = tf.keras.layers.ZeroPadding2D(padding=(0, 0))(img_input)
 
     # Block 1
     x = conv_block(x, filters=n_filters, strides=strides, pooling_size=pooling_size, pool_strides=pool_strides)
@@ -79,10 +88,10 @@ def fcn8_encoder(input_height=DEFAULT_HEIGHT, input_width=DEFAULT_WIDTH, input_l
     x = conv_block(x, filters=n_filters*8, strides=strides, pooling_size=pooling_size, pool_strides=pool_strides)
     f5 = x
 
-    return (f3, f4, f5), img_input
+    return (f3, f4, f5), img_input, (padding_height, padding_width)
 
 
-def fcn8_decoder(convs, n_classes, n_filters=512, dropout=0.3):
+def fcn8_decoder(convs, n_classes, n_filters=512, dropout=0.3, padding=(0, 0)):
     """
     Defines the up-sampling path of the image segmentation model.
 
@@ -132,7 +141,10 @@ def fcn8_decoder(convs, n_classes, n_filters=512, dropout=0.3):
 
     # Up-sample up to the size of the original image
     o = tf.keras.layers.Conv2DTranspose(n_classes, kernel_size=8, strides=8, use_bias=False)(o)
-    o = tf.keras.layers.Cropping2D(((0, 0), (0, 0)))(o)
+
+    # Padding
+    (padding_height, padding_width) = padding
+    o = tf.keras.layers.Cropping2D(((padding_height, padding_height), (padding_width, padding_width)))(o)
 
     # append a sigmoid activation
     outputs = (tf.keras.layers.Activation('sigmoid'))(o)
@@ -161,12 +173,12 @@ def fcn8(input_height=DEFAULT_HEIGHT, input_width=DEFAULT_WIDTH, input_layer=DEF
     """
 
     # start the encoder using the default input size 64 x 84
-    convs, img_input = fcn8_encoder(input_height, input_width, input_layer,
-                                    n_filters=n_filters, strides=strides,
-                                    pooling_size=pool_size, pool_strides=pool_strides)
+    convs, img_input, padding = fcn8_encoder(input_height, input_width, input_layer,
+                                             n_filters=n_filters, strides=strides,
+                                             pooling_size=pool_size, pool_strides=pool_strides)
 
     # pass the convolutions obtained in the encoder to the decoder
-    dec_op = fcn8_decoder(convs, output_layer, n_filters=n_filters*6, dropout=dropout)
+    dec_op = fcn8_decoder(convs, output_layer, n_filters=n_filters*6, dropout=dropout, padding=padding)
 
     # define the model specifying the input (batch of images) and output (decoder output)
     model = tf.keras.Model(inputs=img_input, outputs=dec_op)
@@ -361,3 +373,16 @@ def unet(input_height=DEFAULT_HEIGHT, input_width=DEFAULT_WIDTH, input_layer=DEF
     model = tf.keras.Model(inputs=inputs, outputs=outputs)
 
     return model
+
+###
+
+
+def find_nearest_power_two(x):
+
+    power_of_two = 0
+    y = x
+    while y > 0:
+        y = y >> 1
+        power_of_two += 1
+
+    return power_of_two
