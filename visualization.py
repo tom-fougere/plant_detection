@@ -41,22 +41,66 @@ def plot_masks(mask_folder_path, nb_masks=3, scale_percent=0.6):
     cv2.waitKey()
 
 
-def plot_image_with_mask(image, mask):
+def concatenate_image_with_mask(image, mask):
+    """
+    Concatenate an image with its mask (and both)
+
+    Args:
+      image (cv2.Mat) - Image
+      mask (cv2.Mat) - Mask
+    """
+
+    mask_norm = postprocessing_masks_rgb(mask, image.shape)
+
+    mixed_image = cv2.addWeighted(image, 0.5, mask_norm, 0.5, 0)
+    raw_images = np.concatenate((image, mask_norm), axis=0)
+    image_and_mask = np.concatenate((raw_images, mixed_image), axis=0)
+
+    return image_and_mask
+
+
+def concatenate_several_images_with_mask(images, masks):
+    """
+    Concatenate sereval images with their mask (and both)
+
+    Args:
+      images (list of cv2.Mat) - List of Images
+      masks (list cv2.Mat) - List of Masks
+    """
+
+    full_images = concatenate_image_with_mask(images[0], masks[0])
+
+    for image, mask in zip(images[1:], masks[1:]):
+        current_example = concatenate_image_with_mask(image, mask)
+        full_images = np.concatenate((full_images, current_example), axis=1)
+
+    return full_images
+
+
+def plot_images_with_masks(images, masks, scale_percent=0.6):
     """
     Display an image with its mask (and both)
 
     Args:
       image (cv2.Mat) - Image
       mask (cv2.Mat) - Mask
+      scale_percent (float) - Scale of image to display
     """
-    mask_norm = postprocessing_masks_rgb(mask, image.shape)
 
-    mixed_image = cv2.addWeighted(image, 0.5, mask_norm, 0.5, 0)
-    raw_images = np.concatenate((image, mask_norm), axis=1)
-    example = np.concatenate((raw_images, mixed_image), axis=1)
+    if type(images) is list:
+        example = concatenate_several_images_with_mask(images, masks)
+    else:
+        example = concatenate_image_with_mask(images, masks)
+
+    # New Dimension
+    height = int(example.shape[0] * scale_percent)
+    width = int(example.shape[1] * scale_percent)
+    new_dim = (width, height)
+
+    example_resized = cv2.resize(example, new_dim)
 
     # Plot image
-    cv2.imshow('Left:Image, center:Mask, right:Superposition', example)
+    cv2.imshow('Tom:Image, Middle:Mask, Bottom:Superposition', example_resized)
     cv2.waitKey()
 
 
