@@ -100,9 +100,38 @@ def plot_images_with_masks(images, masks, scale_percent=0.6):
     example_resized = cv2.resize(example, new_dim)
 
     # Plot image
-    cv2.imshow('Tom:Image, Middle:Mask, Bottom:Superposition', example_resized)
+    cv2.imshow('Top:Image, Middle:Mask, Bottom:Superposition', example_resized)
     cv2.waitKey()
 
+
+def concatenate_image_mask_prediction(image, mask, prediction):
+
+    mixed_image = cv2.addWeighted(image, 0.5, prediction, 0.5, 0)
+    all_images = np.concatenate((image, mask, prediction, mixed_image), axis=0)
+
+    return all_images
+
+
+def concatenate_several_images_masks_predictions(images, masks, predictions):
+    full_images = concatenate_image_mask_prediction(images[0], masks[0], predictions[0])
+
+    for image, mask, pred in zip(images[1:], masks[1:], predictions[1:]):
+        current_example = concatenate_image_mask_prediction(image, mask, pred)
+        full_images = np.concatenate((full_images, current_example), axis=1)
+
+    return full_images
+
+
+def plot_predictions(images, masks, predictions):
+
+    if type(images) is list:
+        example = concatenate_several_images_masks_predictions(images, masks, predictions)
+    else:
+        example = concatenate_image_mask_prediction(images, masks, predictions)
+
+    # Plot image
+    cv2.imshow('Top:Image, Middle:Mask, Bottom:Superposition', example)
+    cv2.waitKey()
 
 def plot_prediction(image, prediction, gt):
     """

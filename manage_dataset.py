@@ -2,6 +2,7 @@ import os
 import random
 import cv2
 from shutil import copyfile
+import tarfile
 
 
 # Function to create all directories from a string path
@@ -97,3 +98,8 @@ def get_data(image_path, mask_path, id=1):
 
     return image, mask
 
+
+def load_data(filename, dest_name='dataset'):
+    my_tar = tarfile.open(filename + '.tar.gz')
+    my_tar.extractall(dest_name)
+    my_tar.close()

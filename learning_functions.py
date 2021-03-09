@@ -1,11 +1,8 @@
 import tensorflow as tf
 import numpy as np
 
-from processing_functions import preprocessing_masks, preprocessing_images
-from manage_dataset import get_data
+from processing_functions import preprocessing_masks
 from data_augmentation import create_train_generator, create_validation_generator, my_image_mask_generator
-from ae_models import fcn8, unet
-from visualization import plot_prediction
 
 HEIGHT = 512
 WIDTH = 512
@@ -13,62 +10,57 @@ BATCH_SIZE = 10
 TARGET_FOLDER = "dataset/synthetic_sugarbeet_random_weeds/train_test/"
 EPOCHS = 1
 
-######################################
-# DATA AUGMENTATION
-######################################
-train_image_generator, train_mask_generator = create_train_generator(TARGET_FOLDER,
-                                                                     BATCH_SIZE,
-                                                                     (HEIGHT, WIDTH),
-                                                                     preprocessing_masks)
-val_image_generator, val_mask_generator = create_validation_generator(TARGET_FOLDER,
-                                                                      BATCH_SIZE,
-                                                                      (HEIGHT, WIDTH),
-                                                                      preprocessing_masks)
-my_train_generator = my_image_mask_generator(train_image_generator, train_mask_generator)
-my_val_generator = my_image_mask_generator(val_image_generator, val_mask_generator)
 
-######################################
-# MODEL
-######################################
-model = fcn8(HEIGHT, WIDTH, 3, 1, n_filters=32)
-# model = unet(HEIGHT, WIDTH, 3, 1)
-# print(model.summary())
+def build_generators(folder_path, train_batch_size, val_batch_size, height, width):
+    """
+    Build the Image data generators for image augmentation
 
-model.load_weights('fcn8_weights.h5')
+    :param folder_path: path of the folder containing the images/masks
+    :param train_batch_size: Batch size for the training generator
+    :param val_batch_size:  Batch size for the validation generator
+    :param height: Height of the image to generate
+    :param width: Width of the image to generate
+    :return my_train_generator, my_val_generator: two image data generators
+    """
+    train_image_generator, train_mask_generator = create_train_generator(folder_path,
+                                                                         train_batch_size,
+                                                                         (height, width),
+                                                                         preprocessing_masks)
+    val_image_generator, val_mask_generator = create_validation_generator(folder_path,
+                                                                          val_batch_size,
+                                                                          (height, width),
+                                                                          preprocessing_masks)
+    my_train_generator = my_image_mask_generator(train_image_generator, train_mask_generator)
+    my_val_generator = my_image_mask_generator(val_image_generator, val_mask_generator)
 
-######################################
-# COMPILATION
-######################################
-# model.compile(optimizer=tf.keras.optimizers.Adam(),
-#               loss='binary_crossentropy',
-#               metrics=['accuracy'])
-#
-# steps = 1000 / BATCH_SIZE
-# print('Steps:', steps)
-#
-# # Train your model here
-# history = model.fit(my_train_generator,
-#                     steps_per_epoch=steps,
-#                     epochs=EPOCHS,
-#                     verbose=1,
-#                     validation_data=my_val_generator,
-#                     validation_steps=steps)
+    return my_train_generator, my_val_generator
 
-######################################
-# Prediction
-######################################
-example_image, example_mask = get_data(TARGET_FOLDER + 'test/images/img/',
-                                       TARGET_FOLDER + 'test/masks/img/',
-                                       id=0)
 
-# Preprocessing image to get the right dim
-image_processed = preprocessing_images(example_image, new_size=(HEIGHT, WIDTH))
-image_tensor = tf.expand_dims(image_processed, axis=0)
+def fit_model(model, generators, training_step, val_step, epoch=1):
+    """
+    Fit the model and the data
 
-# Predict output with this image
-prediction = model.predict(image_tensor)
-pred_image = np.array(tf.squeeze(prediction, axis=0))
+    :param model: network model
+    :param generators: List of train/val generators
+    :param training_step: Step for the training
+    :param val_step: Step for the validation
+    :param epoch: Number of epochs
+    :return: History of the learning vs epochs
+    """
+    # Compile your model
+    model.compile(optimizer=tf.keras.optimizers.Adam(),
+                  loss='binary_crossentropy',
+                  metrics=['accuracy'])
 
-plot_prediction(example_image, pred_image, example_mask)
+    # Train your model here
+    history = model.fit(generators[0],
+                        steps_per_epoch=training_step,
+                        epochs=epoch,
+                        verbose=1,
+                        validation_data=generators[1],
+                        validation_steps=val_step)
+
+    return history
+
 
 
