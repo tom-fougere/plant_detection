@@ -13,4 +13,7 @@ settings['training_width'] = 64
 settings['training_step'] = 1000 / settings['batch_size']
 settings['val_step'] = 1000 / settings['batch_size']
 settings['epoch'] = 1
+settings['height'] = 128
+settings['width'] = 128
+settings['weights'] = 'fcn8_weights.h5'  # 'last
 
