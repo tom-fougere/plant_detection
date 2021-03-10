@@ -1,6 +1,8 @@
 settings = dict()
 
-settings['load_data'] = False
+settings['mode'] = 'train'
+settings['model'] = 'fcn8'
+settings['unzip'] = False
 settings['zip_pathname'] = 'dataset/synthetic_sugarbeet_random_weeds'
 settings['image_folder'] = settings['zip_pathname'] + '/rgb/'
 settings['mask_folder'] = settings['zip_pathname'] + '/gt/'
@@ -8,12 +10,9 @@ settings['target_folder'] = settings['zip_pathname'] + '/train_test/'
 settings['split_ratio'] = 0.9
 settings['visualize_n_images'] = 5
 settings['batch_size'] = 10
-settings['training_height'] = 64
-settings['training_width'] = 64
-settings['training_step'] = 1000 / settings['batch_size']
-settings['val_step'] = 1000 / settings['batch_size']
-settings['epoch'] = 1
-settings['height'] = 128
-settings['width'] = 128
-settings['weights'] = 'fcn8_weights.h5'  # 'last
+settings['epochs'] = 5
+settings['height'] = 256
+settings['width'] = 256
+settings['model_json'] = 'model.h5'
+settings['model_weights'] = 'weights.h5'
 
