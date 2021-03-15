@@ -9,13 +9,13 @@ class MergedImage:
 
     def add_image(self, image, axis):
 
-        self.images['l' + str(self.nb_lines) + 'c' + str(self.nb_columns)] = image
-
         # Update the number of lines or columns
-        if axis == 0:
+        if axis == 0 or self.nb_lines == 0:
             self.nb_lines += 1
-        else:
+        if axis == 1 or self.nb_columns == 0:
             self.nb_columns += 1
+
+        self.images['l' + str(self.nb_lines - 1) + 'c' + str(self.nb_columns - 1)] = image
 
     def add_images(self, images: list, axis):
 
@@ -24,12 +24,29 @@ class MergedImage:
 
     def add_merged_image(self, merged_image, axis):
 
+        # Add the images in the current mergedImage
         for key, value in merged_image.images.items():
             index_c = key.find('c')
-            column = key[1:index_c]
-            line = key[index_c + 1:]
+            cur_line = key[1:index_c]
+            cur_column = key[index_c + 1:]
 
-            self.add_image(value, axis=axis)
+            if axis == 0:
+                new_column = cur_column
+                new_line = int(cur_line) + self.nb_lines
+            else:
+                new_column = int(cur_column) + self.nb_columns
+                new_line = cur_line
+            new_key = 'l' + str(new_line) + 'c' + str(new_column)
+
+            self.images[new_key] = value
+
+        # Update the number of lines/columns
+        if axis == 0:
+            self.nb_lines += merged_image.nb_lines
+        else:
+            self.nb_columns += merged_image.nb_columns
+
+        print('end')
 
 
 
