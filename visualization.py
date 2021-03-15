@@ -120,7 +120,7 @@ def plot_images_and_masks(images: list, masks: list, third_overlay=False, scale_
     waitKey()
 
 
-def plot_predictions(images: list, predictions: list,  third_overlay=False, scale_percent=0.6):
+def plot_predictions(images: list, predictions: list, third_overlay=False, scale_percent=0.6):
     """
     Plot predictions with inputted image
     :param images: List of images (input of the NN), np-array

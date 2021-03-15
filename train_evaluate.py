@@ -1,10 +1,12 @@
 import os
-import cv2
+from cv2 import imread, resize
+import random
+from numpy import asarray
 from tensorflow.keras.models import model_from_json
 
-from processing_functions import preprocessing_masks, postprocessing_masks_prediction, postprocessing_masks_rgb, postprocessing_images
+from processing_functions import preprocessing_masks, binarize_image, convert_rgb_mask_to_1channel_mask
 from data_augmentation import create_train_generator, create_validation_generator, my_image_mask_generator
-from performance import mean_class_wise_metrics
+from performance import mean_iou_dice_score_multiclass
 from ae_models import fcn8, unet
 
 from used_settings import *
@@ -46,19 +48,15 @@ if mode == 'prepare_data':
     example_images = []
     example_masks = []
     for i_images in range(settings['visualize_n_images']):
-        example_images.append(cv2.imread(settings['image_folder'] + list_files[i_images]))
-        example_masks.append(cv2.imread(settings['mask_folder'] + list_files[i_images]))
+        example_images.append(imread(settings['image_folder'] + list_files[i_images]))
+        example_masks.append(imread(settings['mask_folder'] + list_files[i_images]))
 
     plot_images_with_masks(example_images, example_masks, scale_percent=0.5)
 
 
 elif mode == 'train':
 
-    # %%
-    # Prepare model for training
-    #
-
-    # Define Network and compile model
+    # Select the model
     if ae_model == 'fcn8':
         model = fcn8(IMAGE_HEIGHT, IMAGE_WIDTH, 3, 1)
     elif ae_model == 'unet':
@@ -76,15 +74,12 @@ elif mode == 'train':
     my_train_generator = my_image_mask_generator(train_image_generator, train_mask_generator)
     my_val_generator = my_image_mask_generator(val_image_generator, val_mask_generator)
 
-    # %%
-    # Train the network
-    #
-
-    # Compile your model
+    # Compile the model
     model.compile(optimizer='Adam',
                   loss='binary_crossentropy',
                   metrics=['accuracy'])
 
+    # Train the model
     H = model.fit(my_train_generator,
                   steps_per_epoch=train_image_generator.samples // BS,
                   validation_data=my_val_generator,
@@ -93,11 +88,7 @@ elif mode == 'train':
                   max_queue_size=BS * 2,
                   verbose=1)
 
-    # %%
     # Save the model
-    #
-
-    # serialize model to JSON
     model_json = model.to_json()
     with open('data/' + settings['model_json'], 'w') as json_file:
         json_file.write(model_json)
@@ -105,32 +96,51 @@ elif mode == 'train':
     model.save_weights('data/' + settings['model_weights'])
     print("Saved model to disk")
 
-# %%
 
 elif mode == 'evaluate':
 
-    # load json and create model
+    # Load the model
     json_file = open('data/' + settings['model_json'], 'r')
     loaded_model_json = json_file.read()
     json_file.close()
     model = model_from_json(loaded_model_json)
-    # load weights into new model
+    # Load weights in the model
     model.load_weights('data/' + settings['model_weights'])
     print("Loaded model from disk")
 
-    # Generate validation generator
-    val_image_generator, val_mask_generator = create_validation_generator(images_folder_path,
-                                                                          BS,
-                                                                          (IMAGE_HEIGHT, IMAGE_WIDTH),
-                                                                          preprocessing_masks)
-    my_val_generator = my_image_mask_generator(val_image_generator, val_mask_generator)
+    # Extract the dimension's input
+    model_input_dim = model.layers[0].output_shape[0]
 
-    for (images, masks) in my_val_generator:
+    # Read the images for the validation
+    image_folder = settings['target_folder'] + 'test/images/img/'
+    mask_folder = settings['target_folder'] + 'test/masks/img/'
+    list_files = os.listdir(image_folder)
 
-        # Compute prediction
-        predictions = model.predict(images)
-        average_iou, average_dice = mean_class_wise_metrics(masks, predictions, 1)
-        break
+    images_list = []
+    masks_list = []
+    for i_images in range(len(list_files)):
+        cur_image = imread(image_folder + list_files[i_images])
+        cur_image = resize(cur_image, (model_input_dim[1], model_input_dim[2]))
+        images_list.append(cur_image)
+
+        cur_mask = imread(mask_folder + list_files[i_images])
+        cur_mask = preprocessing_masks(cur_mask)
+        cur_mask = resize(cur_mask, (model_input_dim[1], model_input_dim[2]))
+        cur_mask = convert_rgb_mask_to_1channel_mask(cur_mask)
+        masks_list.append(cur_mask)
+
+    # Convert list of images into 4d array (and format them for model)
+    images = asarray(images_list) / 255.
+
+    # Predict
+    predictions = model.predict(images)
+
+    # Convert tensor into list of images
+    predictions_list = [binarize_image(predictions[i], settings['binary_threshold'])
+                        for i in range(predictions.shape[0])]
+
+    # Compute the IoU and dice score
+    average_iou, average_dice = mean_iou_dice_score_multiclass(masks_list, predictions_list, nb_classes=2)
 
     print('Average IoU:', average_iou * 100)
     print('Average Dice:', average_dice * 100)
@@ -138,39 +148,45 @@ elif mode == 'evaluate':
 
 elif mode == 'visualize':
 
-    import tensorflow as tf
     from visualization import plot_predictions
 
-    # load json and create model
+    # Load the model
     json_file = open('data/' + settings['model_json'], 'r')
     loaded_model_json = json_file.read()
     json_file.close()
     model = model_from_json(loaded_model_json)
-    # load weights into new model
+    # Load weights in the model
     model.load_weights('data/' + settings['model_weights'])
     print("Loaded model from disk")
 
-    # Visualize  predictions
+    # Extract the dimension's input
+    model_input_dim = model.layers[0].output_shape[0]
+
+    # Read the images of the validation folder
     list_files = os.listdir(settings['image_folder'])
 
-    images = []
+    images_list = []
+    masks_list = []
     masks = []
-    for i_images in range(settings['visualize_n_images']):
-        image = cv2.imread(settings['image_folder'] + list_files[i_images])
-        mask = cv2.imread(settings['mask_folder'] + list_files[i_images])
+    # for i_images in range(settings['visualize_n_images']):
+    for i_images in random.sample(range(len(list_files)), settings['visualize_n_images']):
+        cur_mask = imread(settings['mask_folder'] + list_files[i_images])
+        cur_mask = resize(cur_mask, (model_input_dim[1], model_input_dim[2]))
+        masks_list.append(cur_mask)
+        cur_image = imread(settings['image_folder'] + list_files[i_images])
+        cur_image = resize(cur_image, (model_input_dim[1], model_input_dim[2]))
+        images_list.append(cur_image)
 
-        images.append(postprocessing_images(image, new_size=(IMAGE_HEIGHT, IMAGE_WIDTH)))
-        masks.append(postprocessing_masks_rgb(mask, new_size=(IMAGE_HEIGHT, IMAGE_WIDTH)))
+    # Convert list of images into 4d array (and format them for model)
+    images = asarray(images_list) / 255.
 
-    # Make predictions
-    images_tensor = tf.convert_to_tensor(images)
-    raw_preds = model.predict(images_tensor)
+    # Predict
+    predictions = model.predict(images)
 
-    predictions = []
-    for i_images in range(settings['visualize_n_images']):
-        pred = postprocessing_masks_prediction(raw_preds[i_images],
-                                               new_size=(IMAGE_HEIGHT, IMAGE_WIDTH))
-        predictions.append(pred)
+    # Convert tensor into list of images
+    predictions_list = [predictions[i] for i in range(predictions.shape[0])]
+    # predictions_list = [binarize_image(predictions[i], settings['binary_threshold'])
+    #                     for i in range(predictions.shape[0])]
 
-    # x = concatenate_several_images_masks_predictions(images, masks, predictions)
-    plot_predictions(images, masks, predictions)
+    # Plot prediction
+    plot_predictions(images_list, predictions_list, scale_percent=0.5, third_overlay=True)

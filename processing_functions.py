@@ -1,12 +1,9 @@
-import tensorflow as tf
 import numpy as np
-import cv2
 
 
-# Pre-processing of images and masks
 def preprocessing_masks(mask):
     img = mask > 0
-    img = tf.cast(img, tf.float32)
+    img = img.astype(np.float32)
     return img
 
 
@@ -22,3 +19,10 @@ def convert_rgb_mask_to_1channel_mask(image):
 def convert_rgb_mask_for_displaying(rgb_mask, max_value=1.):
     img = (rgb_mask * (255./max_value)).astype(np.uint8)
     return img
+
+
+def binarize_image(image, threshold):
+    img = image > threshold
+    return img.astype(np.uint8)
+
+
