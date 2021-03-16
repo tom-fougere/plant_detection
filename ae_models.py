@@ -1,4 +1,5 @@
 import tensorflow as tf
+from tensorflow.keras.models import model_from_json
 
 # parameter describing where the channel dimension is found in our dataset
 IMAGE_ORDERING = 'channels_last'
@@ -6,6 +7,24 @@ DEFAULT_HEIGHT = 64
 DEFAULT_WIDTH = 64
 DEFAULT_LAYER = 3
 
+
+def load_model(model_name, weights_name):
+    """
+    Load model with adapted weights
+    :param model_name: path of the json model
+    :param weights_name: path of the weights
+    :return: model
+    """
+    # Load the model
+    json_file = open(model_name, 'r')
+    loaded_model_json = json_file.read()
+    json_file.close()
+    model = model_from_json(loaded_model_json)
+    # Load weights in the model
+    model.load_weights(weights_name)
+    print("Loaded model from disk")
+
+    return model
 
 ############################
 ## FCN-8

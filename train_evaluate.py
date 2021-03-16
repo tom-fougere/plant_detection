@@ -2,12 +2,12 @@ import os
 from cv2 import imread, resize
 import random
 from numpy import asarray
-from tensorflow.keras.models import model_from_json
+from tensorflow.keras.optimizers import Adam
 
 from processing_functions import preprocessing_masks, binarize_image, convert_rgb_mask_to_1channel_mask
 from data_augmentation import create_train_generator, create_validation_generator, my_image_mask_generator
 from performance import mean_iou_dice_score_multiclass
-from ae_models import fcn8, unet
+from ae_models import load_model, fcn8, unet
 
 from used_settings import *
 
@@ -76,7 +76,7 @@ elif mode == 'train':
     my_val_generator = my_image_mask_generator(val_image_generator, val_mask_generator)
 
     # Compile the model
-    model.compile(optimizer='Adam',
+    model.compile(optimizer=Adam(lr=settings['learning_rate']),
                   loss='binary_crossentropy',
                   metrics=['accuracy'])
 
@@ -86,7 +86,6 @@ elif mode == 'train':
                   validation_data=my_val_generator,
                   validation_steps=val_image_generator.samples // BS,
                   epochs=epochs,
-                  max_queue_size=BS * 2,
                   verbose=1)
 
     # Save the model
@@ -100,14 +99,9 @@ elif mode == 'train':
 
 elif mode == 'evaluate':
 
-    # Load the model
-    json_file = open('model/' + settings['model_json'], 'r')
-    loaded_model_json = json_file.read()
-    json_file.close()
-    model = model_from_json(loaded_model_json)
-    # Load weights in the model
-    model.load_weights('model/' + settings['model_weights'])
-    print("Loaded model from disk")
+    # Load model
+    model = load_model('model/' + settings['model_json'],
+                       'model/' + settings['model_weights'])
 
     # Extract the dimension's input
     model_input_dim = model.layers[0].output_shape[0]
@@ -151,14 +145,9 @@ elif mode == 'visualize':
 
     from visualization import plot_predictions
 
-    # Load the model
-    json_file = open('model/' + settings['model_json'], 'r')
-    loaded_model_json = json_file.read()
-    json_file.close()
-    model = model_from_json(loaded_model_json)
-    # Load weights in the model
-    model.load_weights('model/' + settings['model_weights'])
-    print("Loaded model from disk")
+    # Load model
+    model = load_model('model/' + settings['model_json'],
+                       'model/' + settings['model_weights'])
 
     # Extract the dimension's input
     model_input_dim = model.layers[0].output_shape[0]
