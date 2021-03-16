@@ -90,22 +90,22 @@ elif mode == 'train':
 
     # Save the model
     model_json = model.to_json()
-    with open('data/' + settings['model_json'], 'w') as json_file:
+    with open('model/' + settings['model_json'], 'w') as json_file:
         json_file.write(model_json)
     # Save weights
-    model.save_weights('data/' + settings['model_weights'])
+    model.save_weights('model/' + settings['model_weights'])
     print("Saved model to disk")
 
 
 elif mode == 'evaluate':
 
     # Load the model
-    json_file = open('data/' + settings['model_json'], 'r')
+    json_file = open('model/' + settings['model_json'], 'r')
     loaded_model_json = json_file.read()
     json_file.close()
     model = model_from_json(loaded_model_json)
     # Load weights in the model
-    model.load_weights('data/' + settings['model_weights'])
+    model.load_weights('model/' + settings['model_weights'])
     print("Loaded model from disk")
 
     # Extract the dimension's input
@@ -151,12 +151,12 @@ elif mode == 'visualize':
     from visualization import plot_predictions
 
     # Load the model
-    json_file = open('data/' + settings['model_json'], 'r')
+    json_file = open('model/' + settings['model_json'], 'r')
     loaded_model_json = json_file.read()
     json_file.close()
     model = model_from_json(loaded_model_json)
     # Load weights in the model
-    model.load_weights('data/' + settings['model_weights'])
+    model.load_weights('model/' + settings['model_weights'])
     print("Loaded model from disk")
 
     # Extract the dimension's input

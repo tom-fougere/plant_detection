@@ -2,6 +2,7 @@ import numpy as np
 from cv2 import imread, resize, imshow, waitKey
 import os
 import random
+import matplotlib.pyplot as plt
 
 from processing_functions import convert_1channel_to_3channels, convert_rgb_mask_for_displaying
 
@@ -149,12 +150,9 @@ def plot_predictions(images: list, predictions: list, third_overlay=False, scale
 
 def plot_loss_accuracy(model_history):
     """
-    Plot Loss and Accuracy (for training epoch)
-
-    Args:
-      model_history (cv2.Mat) - Image
-      prediction (cv2.Mat) - Predicted output (mask)
-      gt (cv2.Mat) - Expected output (mask)
+    Plot loss and accuracy (for training epoch)
+    :param model_history: History of training
+    :return:
     """
 
     # -----------------------------------------------------------
