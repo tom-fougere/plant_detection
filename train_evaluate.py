@@ -24,7 +24,7 @@ images_folder_path = settings['target_folder']
 if mode == 'prepare_data':
 
     from manage_dataset import load_data, split_data
-    from visualization import plot_images_with_masks
+    from visualization import plot_images_and_masks
 
     # %%
     # Split data into train/val folders
@@ -49,9 +49,10 @@ if mode == 'prepare_data':
     example_masks = []
     for i_images in range(settings['visualize_n_images']):
         example_images.append(imread(settings['image_folder'] + list_files[i_images]))
-        example_masks.append(imread(settings['mask_folder'] + list_files[i_images]))
+        current_mask = convert_rgb_mask_to_1channel_mask(imread(settings['mask_folder'] + list_files[i_images]))  # formatting
+        example_masks.append(current_mask)
 
-    plot_images_with_masks(example_images, example_masks, scale_percent=0.5)
+    plot_images_and_masks(example_images, example_masks, third_overlay=True, scale_percent=0.5)
 
 
 elif mode == 'train':
