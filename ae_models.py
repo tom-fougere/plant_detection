@@ -8,18 +8,21 @@ DEFAULT_WIDTH = 64
 DEFAULT_LAYER = 3
 
 
-def load_model(model_name, weights_name):
+def load_model(model_name: str, weights_name, shape=(DEFAULT_HEIGHT, DEFAULT_WIDTH)):
     """
     Load model with adapted weights
-    :param model_name: path of the json model
-    :param weights_name: path of the weights
+    :param model_name: string of the wanted model ('fcn8', 'unet')
+    :param weights_name: path of the weights saving
+    :param shape: shape (height, width) of the model
     :return: model
     """
-    # Load the model
-    json_file = open(model_name, 'r')
-    loaded_model_json = json_file.read()
-    json_file.close()
-    model = model_from_json(loaded_model_json)
+
+    # Select the model
+    if model_name == 'fcn8':
+        model = fcn8(shape[0], shape[1], DEFAULT_LAYER, 1)
+    elif model_name == 'unet':
+        model = unet(shape[0], shape[1], DEFAULT_LAYER, 1)
+
     # Load weights in the model
     model.load_weights(weights_name)
     print("Loaded model from disk")

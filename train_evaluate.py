@@ -88,23 +88,19 @@ elif mode == 'train':
                   epochs=epochs,
                   verbose=1)
 
-    # Save the model
-    model_json = model.to_json()
-    with open('model/' + settings['model_json'], 'w') as json_file:
-        json_file.write(model_json)
     # Save weights
-    model.save_weights('model/' + settings['model_weights'])
+    model.save_weights('model/' + ae_model + '/' + settings['model_weights'])
     print("Saved model to disk")
 
 
 elif mode == 'evaluate':
 
-    # Load model
-    model = load_model('model/' + settings['model_json'],
-                       'model/' + settings['model_weights'])
+    # Define the dimension's input
+    model_input_dim = (settings['height'], settings['width'])
 
-    # Extract the dimension's input
-    model_input_dim = model.layers[0].output_shape[0]
+    # Load model
+    model = load_model(settings['model'], 'model/' + ae_model + '/' + settings['model_weights'],
+                       model_input_dim)
 
     # Read the images for the validation
     image_folder = settings['target_folder'] + 'test/images/img/'
@@ -115,12 +111,12 @@ elif mode == 'evaluate':
     masks_list = []
     for i_images in range(len(list_files)):
         cur_image = imread(image_folder + list_files[i_images])
-        cur_image = resize(cur_image, (model_input_dim[1], model_input_dim[2]))
+        cur_image = resize(cur_image, (model_input_dim[0], model_input_dim[1]))
         images_list.append(cur_image)
 
         cur_mask = imread(mask_folder + list_files[i_images])
         cur_mask = preprocessing_masks(cur_mask)
-        cur_mask = resize(cur_mask, (model_input_dim[1], model_input_dim[2]))
+        cur_mask = resize(cur_mask, (model_input_dim[0], model_input_dim[1]))
         cur_mask = convert_rgb_mask_to_1channel_mask(cur_mask)
         masks_list.append(cur_mask)
 
@@ -145,12 +141,12 @@ elif mode == 'visualize':
 
     from visualization import plot_predictions
 
-    # Load model
-    model = load_model('model/' + settings['model_json'],
-                       'model/' + settings['model_weights'])
+    # Define the dimension's input
+    model_input_dim = (settings['height'], settings['width'])
 
-    # Extract the dimension's input
-    model_input_dim = model.layers[0].output_shape[0]
+    # Load model
+    model = load_model(settings['model'], 'model/' + ae_model + '/' + settings['model_weights'],
+                       model_input_dim)
 
     # Read the images of the validation folder
     list_files = os.listdir(settings['image_folder'])
@@ -161,10 +157,10 @@ elif mode == 'visualize':
     # for i_images in range(settings['visualize_n_images']):
     for i_images in random.sample(range(len(list_files)), settings['visualize_n_images']):
         cur_mask = imread(settings['mask_folder'] + list_files[i_images])
-        cur_mask = resize(cur_mask, (model_input_dim[1], model_input_dim[2]))
+        cur_mask = resize(cur_mask, (model_input_dim[0], model_input_dim[1]))
         masks_list.append(cur_mask)
         cur_image = imread(settings['image_folder'] + list_files[i_images])
-        cur_image = resize(cur_image, (model_input_dim[1], model_input_dim[2]))
+        cur_image = resize(cur_image, (model_input_dim[0], model_input_dim[1]))
         images_list.append(cur_image)
 
     # Convert list of images into 4d array (and format them for model)
