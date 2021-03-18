@@ -89,7 +89,7 @@ elif mode == 'train':
                   verbose=1)
 
     # Save weights
-    model.save_weights('model/' + settings['model_weights'])
+    model.save_weights('model/' + ae_model + '/' + settings['model_weights'])
     print("Saved model to disk")
 
 
@@ -99,7 +99,7 @@ elif mode == 'evaluate':
     model_input_dim = (settings['height'], settings['width'])
 
     # Load model
-    model = load_model(settings['model'], 'model/' + settings['model_weights'],
+    model = load_model(settings['model'], 'model/' + ae_model + '/' + settings['model_weights'],
                        model_input_dim)
 
     # Read the images for the validation
@@ -145,7 +145,7 @@ elif mode == 'visualize':
     model_input_dim = (settings['height'], settings['width'])
 
     # Load model
-    model = load_model(settings['model'], 'model/' + settings['model_weights'],
+    model = load_model(settings['model'], 'model/' + ae_model + '/' + settings['model_weights'],
                        model_input_dim)
 
     # Read the images of the validation folder
