@@ -9,12 +9,11 @@ settings['mask_folder'] = settings['zip_pathname'] + '/gt/'
 settings['target_folder'] = settings['zip_pathname'] + '/train_test/'
 settings['split_ratio'] = 0.9
 settings['visualize_n_images'] = 5
-settings['batch_size'] = 20
-settings['learning_rate'] = 0.01
+settings['batch_size'] = 10
+settings['learning_rate'] = 0.001
 settings['epochs'] = 3
 settings['height'] = 512
 settings['width'] = 512
-settings['model_json'] = 'model.h5'
-settings['model_weights'] = 'weights.h5'
+settings['model_weights'] = 'correct_weights.h5'
 settings['binary_threshold'] = 0.2
 
