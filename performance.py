@@ -30,9 +30,6 @@ def iou_dice_score_multiclass(y_true, y_pred, nb_classes):
         dice_score = 2 * (intersection_area / (union_area + smoothing_factor))
         class_wise_dice_score.append(dice_score)
 
-        if iou > 1:
-            print('here')
-
     return class_wise_iou, class_wise_dice_score
 
 
@@ -65,3 +62,17 @@ def mean_iou_dice_score_multiclass(y_true, y_pred, nb_classes):
     average_dice = average_dice / count
 
     return average_iou, average_dice
+
+
+def binary_dice_loss(y_true, y_pred):
+    """
+    Compute the dice score loss of a binary data (1 - dice_score)
+    (Only use the values = 1)
+    :param y_true: True data, np-array
+    :param y_pred: Predicted data, np-array
+    :return: dice score: float
+    """
+
+    iou_score, dice_score = iou_dice_score_multiclass(y_true, y_pred, nb_classes=2)
+
+    return 1 - dice_score[1]
