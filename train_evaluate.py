@@ -4,7 +4,7 @@ import random
 from numpy import asarray
 from tensorflow.keras.optimizers import Adam
 
-from processing_functions import preprocessing_masks, binarize_image, convert_rgb_mask_to_1channel_mask
+from processing_functions import *
 from data_augmentation import create_train_generator, create_validation_generator, my_image_mask_generator
 from performance import mean_iou_dice_score_multiclass
 from ae_models import load_model, fcn8, unet
@@ -118,10 +118,11 @@ elif mode == 'evaluate':
         cur_mask = preprocessing_masks(cur_mask)
         cur_mask = resize(cur_mask, (model_input_dim[0], model_input_dim[1]))
         cur_mask = convert_rgb_mask_to_1channel_mask(cur_mask)
+        cur_mask = cur_mask.astype(np.uint8)
         masks_list.append(cur_mask)
 
-    # Convert list of images into 4d array (and format them for model)
-    images = asarray(images_list) / 255.
+    # Processing images (BGR to RGB and normalization /255)
+    images = preprocessing_image(images_list)
 
     # Predict
     predictions = model.predict(images)
@@ -163,8 +164,8 @@ elif mode == 'visualize':
         cur_image = resize(cur_image, (model_input_dim[0], model_input_dim[1]))
         images_list.append(cur_image)
 
-    # Convert list of images into 4d array (and format them for model)
-    images = asarray(images_list) / 255.
+    # Processing images (BGR to RGB and normalization /255)
+    images = preprocessing_image(images_list)
 
     # Predict
     predictions = model.predict(images)

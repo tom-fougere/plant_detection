@@ -1,10 +1,22 @@
 import numpy as np
+from cv2 import cvtColor, COLOR_BGR2RGB
 
 
 def preprocessing_masks(mask):
     img = mask > 0
     img = img.astype(np.float32)
     return img
+
+
+def preprocessing_image(images):
+
+    # BGR to RGB
+    images_list = [cvtColor(img, COLOR_BGR2RGB) for img in images]
+
+    # Convert list of images into 4d array (and format them for model)
+    images = np.asarray(images_list) / 255.
+
+    return images
 
 
 def convert_1channel_to_3channels(image):
