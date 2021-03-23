@@ -1,4 +1,5 @@
 import numpy as np
+from tensorflow import reduce_sum
 
 
 def iou_dice_score_multiclass(y_true, y_pred, nb_classes):
@@ -73,6 +74,7 @@ def binary_dice_loss(y_true, y_pred):
     :return: dice score: float
     """
 
-    iou_score, dice_score = iou_dice_score_multiclass(y_true, y_pred, nb_classes=2)
+    numerator = 2 * reduce_sum(y_true * y_pred)
+    denominator = reduce_sum(y_true + y_pred)
 
-    return 1 - dice_score[1]
+    return 1 - numerator / denominator
