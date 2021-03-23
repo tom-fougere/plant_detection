@@ -6,7 +6,7 @@ from tensorflow.keras.optimizers import Adam
 
 from processing_functions import *
 from data_augmentation import create_train_generator, create_validation_generator, my_image_mask_generator
-from performance import mean_iou_dice_score_multiclass
+from performance import mean_iou_dice_score_multiclass, binary_dice_loss
 from ae_models import load_model, fcn8, unet
 
 from used_settings import *
@@ -75,9 +75,10 @@ elif mode == 'train':
     my_train_generator = my_image_mask_generator(train_image_generator, train_mask_generator)
     my_val_generator = my_image_mask_generator(val_image_generator, val_mask_generator)
 
+    loss_function = binary_dice_loss
     # Compile the model
     model.compile(optimizer=Adam(lr=settings['learning_rate']),
-                  loss='binary_crossentropy',
+                  loss=loss_function,
                   metrics=['accuracy'])
 
     # Train the model
