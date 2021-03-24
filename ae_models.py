@@ -21,7 +21,10 @@ def load_model(model_name: str, weights_name, shape=(DEFAULT_HEIGHT, DEFAULT_WID
     if model_name == 'fcn8':
         model = fcn8(shape[0], shape[1], DEFAULT_LAYER, 1)
     elif model_name == 'unet':
-        model = unet(shape[0], shape[1], DEFAULT_LAYER, 1)
+        # model = unet(shape[0], shape[1], DEFAULT_LAYER, 1)
+        import segmentation_models as sm
+        model = sm.Unet(input_shape=(shape[0], shape[1], DEFAULT_LAYER), classes=1,
+                        activation='sigmoid', encoder_weights=None)
 
     # Load weights in the model
     model.load_weights(weights_name)

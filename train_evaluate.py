@@ -1,7 +1,7 @@
 import os
 from cv2 import imread, resize
 import random
-from numpy import asarray
+import segmentation_models as sm
 from tensorflow.keras.optimizers import Adam
 
 from processing_functions import *
@@ -61,7 +61,8 @@ elif mode == 'train':
     if ae_model == 'fcn8':
         model = fcn8(IMAGE_HEIGHT, IMAGE_WIDTH, 3, 1)
     elif ae_model == 'unet':
-        model = unet(IMAGE_HEIGHT, IMAGE_WIDTH, 3, 1)
+        # model = unet(IMAGE_HEIGHT, IMAGE_WIDTH, 1, 1)
+        model = sm.Unet(input_shape=(IMAGE_HEIGHT, IMAGE_WIDTH, 3), classes=1, activation='sigmoid', encoder_weights=None)
 
     # Data augmentation for training and validation sets
     train_image_generator, train_mask_generator = create_train_generator(images_folder_path,
@@ -78,7 +79,7 @@ elif mode == 'train':
     loss_function = binary_dice_loss
     # Compile the model
     model.compile(optimizer=Adam(lr=settings['learning_rate']),
-                  loss=loss_function,
+                  loss='binary_crossentropy',
                   metrics=['accuracy'])
 
     # Train the model
