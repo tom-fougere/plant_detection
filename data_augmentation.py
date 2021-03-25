@@ -41,6 +41,7 @@ def create_validation_generator(target_folder, batch_size, target_size, mask_pre
     val_image_generator = val_image_datagen.flow_from_directory(target_folder + 'test/images',
                                                                 batch_size=batch_size,
                                                                 target_size=target_size,
+                                                                color_mode='rgb',
                                                                 class_mode=None,
                                                                 seed=SEED)
 
@@ -48,6 +49,7 @@ def create_validation_generator(target_folder, batch_size, target_size, mask_pre
     val_mask_generator = val_mask_datagen.flow_from_directory(target_folder + 'test/masks/',
                                                               batch_size=batch_size,
                                                               target_size=target_size,
+                                                              color_mode='grayscale',
                                                               class_mode=None,
                                                               seed=SEED)
 
