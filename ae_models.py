@@ -104,7 +104,7 @@ def fcn8_encoder(input_height=DEFAULT_HEIGHT, input_width=DEFAULT_WIDTH, input_l
     return (f3, f4, f5), img_input
 
 
-def fcn8_decoder(convs, n_classes, n_filters=512, dropout=0.3):
+def fcn8_decoder(convs, n_classes, n_filters=512, dropout=0.3, activation='sigmoid'):
     """
     Defines the up-sampling path of the image segmentation model.
 
@@ -113,6 +113,7 @@ def fcn8_decoder(convs, n_classes, n_filters=512, dropout=0.3):
     n_classes (int) -- number of classes in the label map
     n_filters (int) -- number of filters of the Conv2D layers
     dropout (float) -- Fraction of the input units to drop
+    activation (string) -- Activation function for the last layer
 
     Returns:
       outputs (tensor) -- the pixel wise label map of the image
@@ -157,13 +158,13 @@ def fcn8_decoder(convs, n_classes, n_filters=512, dropout=0.3):
     o = tf.keras.layers.Cropping2D(((0, 0), (0, 0)))(o)
 
     # append a sigmoid activation
-    outputs = (tf.keras.layers.Activation('sigmoid'))(o)
+    outputs = (tf.keras.layers.Activation(activation))(o)
 
     return outputs
 
 
 def fcn8(input_height=DEFAULT_HEIGHT, input_width=DEFAULT_WIDTH, input_layer=DEFAULT_LAYER, output_layer=DEFAULT_LAYER,
-         n_filters=32, pool_size=2, pool_strides=2, strides=3, dropout=0.5):
+         n_filters=32, pool_size=2, pool_strides=2, strides=3, dropout=0.5, activation='sigmoid'):
     """
     Defines the FCN-8 by connecting the encoder and decoder.
 
@@ -177,6 +178,7 @@ def fcn8(input_height=DEFAULT_HEIGHT, input_width=DEFAULT_WIDTH, input_layer=DEF
     pool_strides (int) -- strides setting of the MaxPooling2D layers
     strides (int) -- strides for the deconvolution/upsampling
     dropout (float) -- Fraction of the input units to drop
+    activation (string) -- Activation function for the last layer
 
     Returns:
       model (tensor) -- the model of the U-net network
@@ -188,7 +190,7 @@ def fcn8(input_height=DEFAULT_HEIGHT, input_width=DEFAULT_WIDTH, input_layer=DEF
                                     pooling_size=pool_size, pool_strides=pool_strides)
 
     # pass the convolutions obtained in the encoder to the decoder
-    dec_op = fcn8_decoder(convs, output_layer, n_filters=n_filters*6, dropout=dropout)
+    dec_op = fcn8_decoder(convs, output_layer, n_filters=n_filters*6, dropout=dropout, activation=activation)
 
     # define the model specifying the input (batch of images) and output (decoder output)
     model = tf.keras.Model(inputs=img_input, outputs=dec_op)
@@ -309,7 +311,8 @@ def unet_decoder_block(inputs, features, n_filters=64, kernel_size=3, strides=3,
     return outputs
 
 
-def unet_decoder(inputs, features, n_classes, n_filters=64, kernel_size=3, strides=2, dropout=0.3):
+def unet_decoder(inputs, features, n_classes, n_filters=64, kernel_size=3, strides=2, dropout=0.3,
+                 activation='sigmoid'):
     """
     Defines the decoder of the UNet chaining together 4 decoder blocks.
 
@@ -321,6 +324,7 @@ def unet_decoder(inputs, features, n_classes, n_filters=64, kernel_size=3, strid
     kernel_size (int) -- kernel size
     strides (int) -- strides for the deconvolution/upsampling
     dropout (float) -- Fraction of the input units to drop
+    activation (string) -- Activation function for the last layer
 
     Returns:
       outputs (tensor) -- the pixel wise label map of the image
@@ -333,13 +337,13 @@ def unet_decoder(inputs, features, n_classes, n_filters=64, kernel_size=3, strid
     c8 = unet_decoder_block(c7, f2, n_filters=n_filters*2, kernel_size=kernel_size, strides=strides, dropout=dropout)
     c9 = unet_decoder_block(c8, f1, n_filters=n_filters, kernel_size=kernel_size, strides=strides, dropout=dropout)
 
-    outputs = tf.keras.layers.Conv2D(n_classes, kernel_size=1, activation='softmax')(c9)
+    outputs = tf.keras.layers.Conv2D(n_classes, kernel_size=1, activation=activation)(c9)
 
     return outputs
 
 
 def unet(input_height=DEFAULT_HEIGHT, input_width=DEFAULT_WIDTH, input_layer=DEFAULT_LAYER, output_layer=DEFAULT_LAYER,
-         n_filters=64, pool_size=2, kernel_size=3, strides=2, dropout=0.3):
+         n_filters=64, pool_size=2, kernel_size=3, strides=2, dropout=0.3, activation='sigmoid'):
     """
     Defines the UNet by connecting the encoder, bottleneck and decoder.
 
@@ -353,6 +357,7 @@ def unet(input_height=DEFAULT_HEIGHT, input_width=DEFAULT_WIDTH, input_layer=DEF
     pool_size (int) -- Windows size over which to take the maximum
     strides (int) -- strides for the deconvolution/upsampling
     dropout (float) -- Fraction of the input units to drop
+    activation (string) -- Activation function for the last layer
 
     Returns:
       model (tensor) -- the model of the U-net network
@@ -377,7 +382,8 @@ def unet(input_height=DEFAULT_HEIGHT, input_width=DEFAULT_WIDTH, input_layer=DEF
                            n_filters=n_filters,
                            kernel_size=kernel_size,
                            strides=strides,
-                           dropout=dropout)
+                           dropout=dropout,
+                           activation=activation)
 
     # create the model
     model = tf.keras.Model(inputs=inputs, outputs=outputs)
