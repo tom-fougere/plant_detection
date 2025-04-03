@@ -59,7 +59,7 @@ elif mode == 'train':
 
     # Select the model
     if ae_model == 'fcn8':
-        model = fcn8(IMAGE_HEIGHT, IMAGE_WIDTH, 3, 1)
+        model = fcn8(IMAGE_HEIGHT, IMAGE_WIDTH, 1, 1)
     elif ae_model == 'unet':
         model = unet(IMAGE_HEIGHT, IMAGE_WIDTH, 3, 1)
 
